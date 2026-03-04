@@ -27,6 +27,7 @@ typedef struct
     double longitud;
 }tDistancia;
 
+typedef int (*Cmp)(const void *, const void *);
 FILE* abrirArchivo(const char* arch,const char* tipo);
 
 void consolidarArchivos(const char* arch1, const char* arch2,const char* arch3);
@@ -35,10 +36,9 @@ double calcularDistancia(double latitud1, double longitud1, double latitud2, dou
 void mostrarDistancias(const tDistancia* embarcaciones, int ce);
 void mostrar5EmbarcacionesMasKM(const char* arch);
 
-void ordenar(tDistancia* embarcaciones, int n);
-void ordenar2(tDistancia* emb, int n);
-
-tDistancia* buscarMayor(tDistancia* ini, tDistancia* fin);
+void OrdenSeleccion(void* v, int ce, size_t tamElem,Cmp);
+void* buscarMayor(void* ini, void* fin,size_t tamElem,Cmp);
+int comparar_estructura(const void *arg1, const void *arg2);
 void intercambiar(void*x, void*y,size_t tamElem);
 
 

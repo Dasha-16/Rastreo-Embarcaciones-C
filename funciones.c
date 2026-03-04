@@ -6,41 +6,49 @@ FILE* abrirArchivo(const char* arch,const char* tipo)
     if(pf==NULL)
     {
         printf("Error al abrir el archivo %s",arch);
-        return NULL;
     }
     return pf;
 }
 
 void consolidarArchivos(const char* arch1, const char* arch2,const char* arch3)
 {
-    FILE*pfA=abrirArchivo(arch1,"rt");
-    FILE*pfB=abrirArchivo(arch2,"rt");
-    if(pfB==NULL) fclose(pfA);
-    FILE*pfFinal=abrirArchivo(arch3,"wt");
-    if(pfFinal==NULL)
+    FILE* pfA = abrirArchivo(arch1,"rt");
+    FILE* pfB = abrirArchivo(arch2,"rt");
+
+    if (pfA == NULL || pfB == NULL)
+    {
+        if (pfA != NULL) fclose(pfA);
+        if (pfB != NULL) fclose(pfB);
+        return;
+    }
+
+    FILE* pfFinal = abrirArchivo(arch3, "wt");
+    if (pfFinal == NULL)
     {
         fclose(pfA);
         fclose(pfB);
+        return;
     }
 
-    tPos posA,posB;
+    tPos posA, posB;
 
     fscanf(pfA,"%ld,%[^,],%lf,%lf\n",&posA.fechaHora,posA.matricula,&posA.latitud,&posA.longitud);
     fscanf(pfB,"%ld,%[^,],%lf,%lf\n",&posB.fechaHora,posB.matricula,&posB.latitud,&posB.longitud);
 
     while(!feof(pfA) && !feof(pfB))
     {
-        if(posA.fechaHora>posB.fechaHora)
+
+        if(posA.fechaHora > posB.fechaHora)
         {
             fprintf(pfFinal,"%ld,%8s,%lf,%lf\n",posB.fechaHora,posB.matricula,posB.latitud,posB.longitud);
             fscanf(pfB,"%ld,%[^,],%lf,%lf\n",&posB.fechaHora,posB.matricula,&posB.latitud,&posB.longitud);
         }
-        if(posA.fechaHora<posB.fechaHora)
+        if(posA.fechaHora < posB.fechaHora)
         {
             fprintf(pfFinal,"%ld,%8s,%lf,%lf\n",posA.fechaHora,posA.matricula,posA.latitud,posA.longitud);
             fscanf(pfA,"%ld,%[^,],%lf,%lf\n",&posA.fechaHora,posA.matricula,&posA.latitud,&posA.longitud);
         }
-        if(posA.fechaHora==posB.fechaHora)
+        if(posA.fechaHora == posB.fechaHora)
         {
             if(strcmp(posA.matricula,posB.matricula)==0)
             {
@@ -69,6 +77,7 @@ void consolidarArchivos(const char* arch1, const char* arch2,const char* arch3)
         fprintf(pfFinal,"%ld,%8s,%lf,%lf\n",posB.fechaHora,posB.matricula,posB.latitud,posB.longitud);
         fscanf(pfB,"%ld,%[^,],%lf,%lf\n",&posB.fechaHora,posB.matricula,&posB.latitud,&posB.longitud);
     }
+
 
     fclose(pfA);
     fclose(pfB);
@@ -191,9 +200,7 @@ void mostrar5EmbarcacionesMasKM(const char* arch)
     if (emb==NULL) return;
 
     tDistancia* embIni=emb;
-    ordenar(emb,cantEmb);
-
-    //mostrarDistancias(emb,5); //funciona pero debo hacerlo como matriz
+    OrdenSeleccion(emb, cantEmb, sizeof(tDistancia),comparar_estructura);
     int j=0;
     printf("\n----- LAS EMBARCACIONES QUE MAS KILOMETROS RECORRIERON -----\n");
 
@@ -206,34 +213,31 @@ void mostrar5EmbarcacionesMasKM(const char* arch)
     free(emb);
 }
 
-void ordenar(tDistancia* emb,int ce)
-{
-    tDistancia* ult = emb + ce - 1; // Puntero al último elemento del array
-    tDistancia* i = emb; // Puntero para iterar sobre el array
-    tDistancia* menor; //direccion del menor elemento
 
-    // Itera sobre el array de estructuras
-    for (i=emb; i < emb + ce - 1; i++)
+void OrdenSeleccion(void* v, int ce, size_t tamElem,Cmp cmp)
+{
+    void* ult= v + (ce-1)*tamElem;
+    void* i;
+    void* mayor;
+
+    for(i=v; i<ult; i+=tamElem)
     {
-        menor=buscarMayor(i,ult);
-        if (menor != i)
-        {
-            intercambiar(menor, i, sizeof(tDistancia));
-        }
+        mayor=buscarMayor(i,ult,tamElem,cmp);
+        intercambiar(mayor,i, tamElem);
     }
 }
-tDistancia* buscarMayor(tDistancia* ini, tDistancia* fin)
+
+void* buscarMayor(void* ini, void* fin,size_t tamElem,Cmp cmp)
 {
-    tDistancia* PosMay = ini;
-    tDistancia* j;
-    for(j=ini+1; j<=fin; j++)
+    void* PosMay = ini;
+    void* j;
+    for(j=ini; j<=fin; j+=tamElem)
     {
-        if(j->distancia > PosMay->distancia)
-            PosMay = j;
+        if(cmp(j,PosMay)>0) ////
+            PosMay=j;
     }
     return PosMay;
 }
-
 
 void intercambiar(void*x, void*y, size_t tamElem)
 {
@@ -244,5 +248,24 @@ void intercambiar(void*x, void*y, size_t tamElem)
     memcpy(y,valorX,tamElem);
 
     free(valorX);
+}
+
+int comparar_estructura(const void *arg1, const void *arg2)
+{
+    const tDistancia *posA = (const tDistancia *)arg1;
+    const tDistancia *posB = (const tDistancia *)arg2;
+
+    if (posA->distancia < posB->distancia)
+    {
+        return -1;
+    }
+    else if (posA->distancia > posB->distancia)
+    {
+        return 1;
+    }
+    else
+    {
+        return 0;
+    }
 }
 
